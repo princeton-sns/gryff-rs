@@ -5,6 +5,7 @@ import (
 	"dlog"
 	"flag"
 	"fmt"
+	"clientproto"
 	"genericsmrproto"
 	"log"
 	"masterproto"
@@ -29,6 +30,10 @@ var eps *int = flag.Int("eps", 0, "Send eps more messages per round than the cli
 var conflicts *int = flag.Int("c", -1, "Percentage of conflicts. Defaults to 0%")
 var s = flag.Float64("s", 2, "Zipfian s parameter")
 var v = flag.Float64("v", 1, "Zipfian v parameter")
+var expLength *int = flag.Int("explength", 30, "Not used.")
+var rampUp *int = flag.Int("rampup", 5, "Not used.")
+var rampDown *int = flag.Int("rampdown", 5, "Not used.")
+
 
 var N int
 
@@ -49,16 +54,26 @@ func main() {
 		log.Fatalf("Conflicts percentage must be between 0 and 100.\n")
 	}
 
+	log.Printf("Dialing master at addr %s:%d\n", *masterAddr,
+		*masterPort)
 	master, err := rpc.DialHTTP("tcp", fmt.Sprintf("%s:%d", *masterAddr, *masterPort))
 	if err != nil {
-		log.Fatalf("Error connecting to master\n")
+		log.Fatalf("Error connecting to master: %v\n", err)
 	}
 
 	rlReply := new(masterproto.GetReplicaListReply)
 	err = master.Call("Master.GetReplicaList", new(masterproto.GetReplicaListArgs), rlReply)
 	if err != nil {
-		log.Fatalf("Error making the GetReplicaList RPC")
+		log.Fatalf("Error making the GetReplicaList RPC: %v\n", err)
 	}
+	log.Printf("Got replica list from master: [")
+	for i := 0; i < len(rlReply.ReplicaList); i++ {
+		log.Printf("%s", rlReply.ReplicaList[i])
+		if i != len(rlReply.ReplicaList) - 1 {
+			log.Printf(", ")
+		}
+	}
+	log.Printf("]\n")
 
 	N = len(rlReply.ReplicaList)
 	servers := make([]net.Conn, N)
@@ -96,17 +111,17 @@ func main() {
 		}
 	}
 	if *conflicts >= 0 {
-		fmt.Println("Uniform distribution")
+		log.Println("Uniform distribution")
 	} else {
-		fmt.Println("Zipfian distribution:")
-		//fmt.Println(test[0:100])
+		log.Println("Zipfian distribution:")
+		//log.Println(test[0:100])
 	}
 
 	for i := 0; i < N; i++ {
 		var err error
 		servers[i], err = net.Dial("tcp", rlReply.ReplicaList[i])
 		if err != nil {
-			log.Printf("Error connecting to replica %d\n", i)
+			log.Printf("Error connecting to replica %d: %v\n", i, err)
 		}
 		readers[i] = bufio.NewReader(servers[i])
 		writers[i] = bufio.NewWriter(servers[i])
@@ -126,7 +141,7 @@ func main() {
 
 	var id int32 = 0
 	done := make(chan bool, N)
-	args := genericsmrproto.Propose{id, state.Command{state.PUT, 0, 0}, 0}
+	args := genericsmrproto.Propose{id, state.Command{state.PUT, 0, 0, 0}, 0}
 
 	before_total := time.Now()
 
@@ -166,17 +181,17 @@ func main() {
 				if *noLeader {
 					leader = rarray[i]
 				}
-				writers[leader].WriteByte(genericsmrproto.PROPOSE)
+				writers[leader].WriteByte(clientproto.GEN_PROPOSE)
 				args.Marshal(writers[leader])
 			} else {
 				//send to everyone
 				for rep := 0; rep < N; rep++ {
-					writers[rep].WriteByte(genericsmrproto.PROPOSE)
+					writers[rep].WriteByte(clientproto.GEN_PROPOSE)
 					args.Marshal(writers[rep])
 					writers[rep].Flush()
 				}
 			}
-			//fmt.Println("Sent", id)
+			//log.Println("Sent", id)
 			id++
 			if i%100 == 0 {
 				for i := 0; i < N; i++ {
@@ -200,12 +215,12 @@ func main() {
 
 		after := time.Now()
 
-		fmt.Printf("Round took %v\n", after.Sub(before))
+		log.Printf("Round took %v\n", after.Sub(before))
 
 		if *check {
 			for j := 0; j < n; j++ {
 				if !rsp[j] {
-					fmt.Println("Didn't receive", j)
+					log.Println("Didn't receive", j)
 				}
 			}
 		}
@@ -223,14 +238,14 @@ func main() {
 	}
 
 	after_total := time.Now()
-	fmt.Printf("Test took %v\n", after_total.Sub(before_total))
+	log.Printf("Test took %v\n", after_total.Sub(before_total))
 
 	s := 0
 	for _, succ := range successful {
 		s += succ
 	}
 
-	fmt.Printf("Successful: %d\n", s)
+	log.Printf("Successful: %d\n", s)
 
 	for _, client := range servers {
 		if client != nil {
@@ -244,16 +259,24 @@ func waitReplies(readers []*bufio.Reader, leader int, n int, done chan bool) {
 	e := false
 
 	reply := new(genericsmrproto.ProposeReplyTS)
+	var err error
+	var msgType byte
 	for i := 0; i < n; i++ {
-		if err := reply.Unmarshal(readers[leader]); err != nil {
-			fmt.Println("Error when reading:", err)
+		if msgType, err = readers[leader].ReadByte(); err != nil ||
+			msgType != clientproto.GEN_PROPOSE_REPLY{
+				log.Println("Error when reading (op:%d): %v", msgType, err)
 			e = true
 			continue
 		}
-		//fmt.Println(reply.Value)
+		if err = reply.Unmarshal(readers[leader]); err != nil {
+			log.Println("Error when reading:", err)
+			e = true
+			continue
+		}
+		//log.Println(reply.Value)
 		if *check {
 			if rsp[reply.CommandId] {
-				fmt.Println("Duplicate reply", reply.CommandId)
+				log.Println("Duplicate reply", reply.CommandId)
 			}
 			rsp[reply.CommandId] = true
 		}

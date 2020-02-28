@@ -75,5 +75,5 @@ func TestExec(t *testing.T) {
 	r.exec.executeCommand(0, 5)
 	r.exec.executeCommand(0, 5)
 
-	fmt.Println("Test ended\n")
+	log.Println("Test ended\n")
 }

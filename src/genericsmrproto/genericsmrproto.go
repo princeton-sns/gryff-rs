@@ -2,17 +2,7 @@ package genericsmrproto
 
 import (
 	"state"
-)
-
-const (
-	PROPOSE uint8 = iota
-	PROPOSE_REPLY
-	READ
-	READ_REPLY
-	PROPOSE_AND_READ
-	PROPOSE_AND_READ_REPLY
-	GENERIC_SMR_BEACON
-	GENERIC_SMR_BEACON_REPLY
+	"fastrpc"
 )
 
 type Propose struct {
@@ -76,4 +66,8 @@ type BeTheLeaderArgs struct {
 }
 
 type BeTheLeaderReply struct {
+}
+
+func (t *ProposeReplyTS) New() fastrpc.Serializable {
+  return new(ProposeReplyTS)
 }

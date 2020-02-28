@@ -74,8 +74,8 @@ type LeaderBookkeeping struct {
 	cstructs      [][]int32
 }
 
-func NewReplica(id int, peerAddrList []string, thrifty bool, exec bool, dreply bool) *Replica {
-	r := &Replica{genericsmr.NewReplica(id, peerAddrList, thrifty, exec, dreply),
+func NewReplica(id int, peerAddrList []string, thrifty bool, exec bool, dreply bool, statsFile string) *Replica {
+	r := &Replica{genericsmr.NewReplica(id, peerAddrList, thrifty, exec, dreply, false, statsFile),
 		make(chan *gpaxosproto.Prepare, CHAN_BUFFER_SIZE),
 		make(chan *gpaxosproto.M_1a, CHAN_BUFFER_SIZE),
 		make(chan *gpaxosproto.M_1b, CHAN_BUFFER_SIZE),
@@ -218,7 +218,7 @@ func (r *Replica) replyPrepare(reply *gpaxosproto.PrepareReply, w *bufio.Writer)
 func (r *Replica) send1b(msg *gpaxosproto.M_1b, w *bufio.Writer) {
 	w.WriteByte(gpaxosproto.M1B)
 	msg.Marshal(w)
-	dummy := state.Command{0, 0, 0}
+	dummy := state.Command{0, 0, 0, 0}
 	for _, cid := range msg.Cstruct {
 		if cmd, present := r.commands[cid]; present {
 			cmd.Marshal(w)
@@ -355,7 +355,6 @@ func (r *Replica) run() {
 
 				case propose := <-r.ProposeChan:
 					//got a Propose from a client
-					dlog.Printf("Proposal with id %d @ replica %d\n", propose.CommandId, r.Id)
 					r.commandsMutex.Lock()
 					r.handlePropose(propose)
 					r.commandsMutex.Unlock()

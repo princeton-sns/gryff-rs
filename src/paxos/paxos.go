@@ -17,7 +17,7 @@ const CHAN_BUFFER_SIZE = 200000
 const TRUE = uint8(1)
 const FALSE = uint8(0)
 
-const MAX_BATCH = 5000
+const MAX_BATCH = 1
 
 type Replica struct {
 	*genericsmr.Replica // extends a generic Paxos replica
@@ -67,8 +67,8 @@ type LeaderBookkeeping struct {
 	nacks           int
 }
 
-func NewReplica(id int, peerAddrList []string, thrifty bool, exec bool, dreply bool, durable bool) *Replica {
-	r := &Replica{genericsmr.NewReplica(id, peerAddrList, thrifty, exec, dreply),
+func NewReplica(id int, peerAddrList []string, thrifty bool, exec bool, dreply bool, beacon bool, durable bool, statsFile string) *Replica {
+	r := &Replica{genericsmr.NewReplica(id, peerAddrList, thrifty, exec, dreply, false, statsFile),
 		make(chan fastrpc.Serializable, genericsmr.CHAN_BUFFER_SIZE),
 		make(chan fastrpc.Serializable, genericsmr.CHAN_BUFFER_SIZE),
 		make(chan fastrpc.Serializable, genericsmr.CHAN_BUFFER_SIZE),
@@ -85,6 +85,8 @@ func NewReplica(id int, peerAddrList []string, thrifty bool, exec bool, dreply b
 		true,
 		-1}
 
+
+	r.Beacon = beacon
 	r.Durable = durable
 
 	r.prepareRPC = r.RegisterRPC(new(paxosproto.Prepare), r.prepareChan)
@@ -181,6 +183,13 @@ func (r *Replica) run() {
 	clockChan = make(chan bool, 1)
 	go r.clock()
 
+	slowClockChan := make(chan bool, 1)
+	go r.SlowClock(slowClockChan)
+
+	if r.Beacon {
+		go r.StopAdapting()
+	}
+
 	onOffProposeChan := r.ProposeChan
 
 	for !r.Shutdown {
@@ -197,7 +206,9 @@ func (r *Replica) run() {
 			dlog.Printf("Proposal with op %d\n", propose.Command.Op)
 			r.handlePropose(propose)
 			//deactivate the new proposals channel to prioritize the handling of protocol messages
-			onOffProposeChan = nil
+			if MAX_BATCH > 100 {
+				onOffProposeChan = nil
+			}
 			break
 
 		case prepareS := <-r.prepareChan:
@@ -241,6 +252,24 @@ func (r *Replica) run() {
 			dlog.Printf("Received AcceptReply for instance %d\n", acceptReply.Instance)
 			r.handleAcceptReply(acceptReply)
 			break
+
+		case beacon := <-r.BeaconChan:
+			dlog.Printf("Received Beacon from replica %d with timestamp %d\n", beacon.Rid, beacon.Timestamp)
+			r.ReplyBeacon(beacon)
+			break
+
+		case <-slowClockChan:
+			if r.Beacon {
+				for q := int32(0); q < int32(r.N); q++ {
+					if q == r.Id {
+						continue
+					}
+					r.SendBeacon(q)
+				}
+			}
+			break
+
+
 		}
 	}
 }
@@ -306,18 +335,17 @@ func (r *Replica) bcastAccept(instance int32, ballot int32, command []state.Comm
 	if r.Thrifty {
 		n = r.N >> 1
 	}
-	q := r.Id
 
-	for sent := 0; sent < n; {
-		q = (q + 1) % int32(r.N)
-		if q == r.Id {
-			break
-		}
-		if !r.Alive[q] {
+	sent := 0
+	for q := 0; q < r.N-1; q++ {
+		if !r.Alive[r.PreferredPeerOrder[q]] {
 			continue
 		}
+		r.SendMsg(r.PreferredPeerOrder[q], r.acceptRPC, args)
 		sent++
-		r.SendMsg(q, r.acceptRPC, args)
+		if sent >= n {
+			break
+		}
 	}
 }
 
@@ -628,15 +656,17 @@ func (r *Replica) handleAcceptReply(areply *paxosproto.AcceptReply) {
 		if inst.lb.acceptOKs+1 > r.N>>1 {
 			inst = r.instanceSpace[areply.Instance]
 			inst.status = COMMITTED
-			if inst.lb.clientProposals != nil && !r.Dreply {
+			if inst.lb.clientProposals != nil {
 				// give client the all clear
 				for i := 0; i < len(inst.cmds); i++ {
-					propreply := &genericsmrproto.ProposeReplyTS{
-						TRUE,
-						inst.lb.clientProposals[i].CommandId,
-						state.NIL,
-						inst.lb.clientProposals[i].Timestamp}
-					r.ReplyProposeTS(propreply, inst.lb.clientProposals[i].Reply)
+					if !r.NeedsWaitForExecute(&inst.cmds[i]) {
+						propreply := &genericsmrproto.ProposeReplyTS{
+							TRUE,
+							inst.lb.clientProposals[i].CommandId,
+							state.NIL,
+							inst.lb.clientProposals[i].Timestamp}
+						r.ReplyProposeTS(propreply, inst.lb.clientProposals[i].Reply)
+					}
 				}
 			}
 
@@ -669,7 +699,7 @@ func (r *Replica) executeCommands() {
 				inst := r.instanceSpace[i]
 				for j := 0; j < len(inst.cmds); j++ {
 					val := inst.cmds[j].Execute(r.State)
-					if r.Dreply && inst.lb != nil && inst.lb.clientProposals != nil {
+					if r.NeedsWaitForExecute(&inst.cmds[j]) && inst.lb != nil && inst.lb.clientProposals != nil {
 						propreply := &genericsmrproto.ProposeReplyTS{
 							TRUE,
 							inst.lb.clientProposals[j].CommandId,

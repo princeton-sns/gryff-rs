@@ -1,20 +1,16 @@
-package main
+package masterlib
 
 import (
-	"flag"
-	"fmt"
-	"genericsmrproto"
-	"log"
-	"masterproto"
-	"net"
-	"net/http"
-	"net/rpc"
-	"sync"
-	"time"
+  "sync"
+  "net/rpc"
+  "net"
+  "masterproto"
+  "net/http"
+  "time"
+  "fmt"
+  "log"
+  "genericsmrproto"
 )
-
-var portnum *int = flag.Int("port", 7087, "Port # to listen on. Defaults to 7087")
-var numNodes *int = flag.Int("N", 3, "Number of replicas. Defaults to 3.")
 
 type Master struct {
 	N        int
@@ -25,36 +21,41 @@ type Master struct {
 	nodes    []*rpc.Client
 	leader   []bool
 	alive    []bool
+  l        net.Listener
+  server   *rpc.Server
 }
 
-func main() {
-	flag.Parse()
-
-	log.Printf("Master starting on port %d\n", *portnum)
-	log.Printf("...waiting for %d replicas\n", *numNodes)
-
-	master := &Master{*numNodes,
-		make([]string, 0, *numNodes),
-		make([]string, 0, *numNodes),
-		make([]int, 0, *numNodes),
+func NewMaster(numNodes int, portnum int) *Master {
+  master := &Master{numNodes,
+		make([]string, 0, numNodes),
+		make([]string, 0, numNodes),
+		make([]int, 0, numNodes),
 		new(sync.Mutex),
-		make([]*rpc.Client, *numNodes),
-		make([]bool, *numNodes),
-		make([]bool, *numNodes)}
+		make([]*rpc.Client, numNodes),
+		make([]bool, numNodes),
+		make([]bool, numNodes),
+    nil,
+    rpc.NewServer()}
 
-	rpc.Register(master)
-	rpc.HandleHTTP()
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", *portnum))
+	master.server.Register(master)
+	master.server.HandleHTTP(rpc.DefaultRPCPath, rpc.DefaultDebugPath)
+  var err error
+	master.l, err = net.Listen("tcp", fmt.Sprintf(":%d", portnum))
 	if err != nil {
 		log.Fatal("Master listen error:", err)
 	}
 
-	go master.run()
+	go master.Run()
 
-	http.Serve(l, nil)
+  return master
 }
 
-func (master *Master) run() {
+
+func (master *Master) Serve() {
+	http.Serve(master.l, nil)
+}
+
+func (master *Master) Run() {
 	for true {
 		master.lock.Lock()
 		if len(master.nodeList) == master.N {
@@ -118,6 +119,8 @@ func (master *Master) Register(args *masterproto.RegisterArgs, reply *masterprot
 
 	nlen := len(master.nodeList)
 	index := nlen
+
+  log.Printf("Replica registering with addr %s and port %d\n", args.Addr, args.Port)
 
 	addrPort := fmt.Sprintf("%s:%d", args.Addr, args.Port)
 

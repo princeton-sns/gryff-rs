@@ -1,11 +1,12 @@
 package epaxos
 
 import (
-	//    "state"
+	//	"state"
 	"epaxosproto"
 	"genericsmrproto"
 	"sort"
 	"time"
+	"dlog"
 )
 
 const (
@@ -35,6 +36,7 @@ func (e *Exec) executeCommand(replica int32, instance int32) bool {
 		return false
 	}
 
+	dlog.Printf("[%d.%d] Finding scc and then executing.\n", replica, instance)
 	if !e.findSCC(inst) {
 		return false
 	}
@@ -52,6 +54,7 @@ func (e *Exec) findSCC(root *Instance) bool {
 }
 
 func (e *Exec) strongconnect(v *Instance, index *int) bool {
+	dlog.Printf("[%d] SCC %d %d.\n", e.r.Id, v.Slot, v.Seq)
 	v.Index = *index
 	v.Lowlink = *index
 	*index = *index + 1
@@ -69,16 +72,24 @@ func (e *Exec) strongconnect(v *Instance, index *int) bool {
 		inst := v.Deps[q]
 		for i := e.r.ExecedUpTo[q] + 1; i <= inst; i++ {
 			for e.r.InstanceSpace[q][i] == nil || e.r.InstanceSpace[q][i].Cmds == nil || v.Cmds == nil {
+				if v.lb != nil && v.lb.blockStartTime.IsZero() {
+					v.lb.blockStartTime = time.Now()
+				}
+				dlog.Printf("Waiting for dep %d.%d predecessor %d.%d to exist.\n", q, inst, q, i)
 				time.Sleep(1000 * 1000)
 			}
-			/*        if !state.Conflict(v.Command, e.r.InstanceSpace[q][i].Command) {
-			          continue
-			          }
+			/*	  if !state.Conflict(v.Command, e.r.InstanceSpace[q][i].Command) {
+				  continue
+				  }
 			*/
 			if e.r.InstanceSpace[q][i].Status == epaxosproto.EXECUTED {
 				continue
 			}
 			for e.r.InstanceSpace[q][i].Status != epaxosproto.COMMITTED {
+				if v.lb != nil && v.lb.blockStartTime.IsZero() {
+					v.lb.blockStartTime = time.Now()
+				}
+				dlog.Printf("Waiting for dep %d.%d predecessor %d.%d to be committed.\n", q, inst, q, i)
 				time.Sleep(1000 * 1000)
 			}
 			w := e.r.InstanceSpace[q][i]
@@ -107,15 +118,28 @@ func (e *Exec) strongconnect(v *Instance, index *int) bool {
 		//found SCC
 		list := stack[l:len(stack)]
 
+		dlog.Printf("SCC size: %d.\n", len(list))
+
 		//execute commands in the increasing order of the Seq field
 		sort.Sort(nodeArray(list))
 		for _, w := range list {
 			for w.Cmds == nil {
 				time.Sleep(1000 * 1000)
 			}
+			if w.lb != nil {
+				w.lb.executedTime = time.Now()
+				blocked := int64(0)
+				if !w.lb.blockStartTime.IsZero() {
+					blocked = int64(w.lb.executedTime.Sub(w.lb.blockStartTime))
+				}
+				dlog.Printf("[%d.%d] Execute delay: %d (blocked %d).\n", e.r.Id, w.Slot, w.lb.executedTime.Sub(w.lb.committedTime), blocked)
+			}
 			for idx := 0; idx < len(w.Cmds); idx++ {
+				if w.lb != nil {
+					dlog.Printf("[%d.%d] Executing command %d.\n", e.r.Id, w.Slot, idx)
+				}
 				val := w.Cmds[idx].Execute(e.r.State)
-				if e.r.Dreply && w.lb != nil && w.lb.clientProposals != nil {
+				if e.r.NeedsWaitForExecute(&w.Cmds[idx]) && w.lb != nil && w.lb.clientProposals != nil {
 					e.r.ReplyProposeTS(
 						&genericsmrproto.ProposeReplyTS{
 							TRUE,

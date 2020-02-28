@@ -97,15 +97,15 @@ func main() {
 		}
 	}
 	if *conflicts >= 0 {
-		//fmt.Println("Uniform distribution")
+		//log.Println("Uniform distribution")
 	} else {
-		/*fmt.Println("Zipfian distribution:")
+		/*log.Println("Zipfian distribution:")
 		  sum := 0
 		  for _, val := range test[0:2000] {
 		      sum += val
 		  }
-		  fmt.Println(test[0:100])
-		  fmt.Println(sum)*/
+		  log.Println(test[0:100])
+		  log.Println(sum)*/
 	}
 
 	for i := 0; i < N; i++ {
@@ -175,7 +175,7 @@ func main() {
 			writers[leader].WriteByte(genericsmrproto.PROPOSE)
 			args.Marshal(writers[leader])
 			writers[leader].Flush()
-			//fmt.Println("Sent", id)
+			//log.Println("Sent", id)
 			id++
 			if i%100 == 0 {
 				for i := 0; i < N; i++ {
@@ -203,12 +203,12 @@ func main() {
 
 		// after := time.Now()
 
-		//  fmt.Printf("Round took %v\n", after.Sub(before))
+		//  log.Printf("Round took %v\n", after.Sub(before))
 
 		if *check {
 			for j := 0; j < n; j++ {
 				if !rsp[j] {
-					fmt.Println("Didn't receive", j)
+					log.Println("Didn't receive", j)
 				}
 			}
 		}
@@ -226,16 +226,16 @@ func main() {
 	}
 
 	after_total := time.Now()
-	//fmt.Printf("Test took %v\n", after_total.Sub(before_total))
-	//fmt.Printf("%v\n", (after_total.Sub(before_total)).Seconds())
+	//log.Printf("Test took %v\n", after_total.Sub(before_total))
+	//log.Printf("%v\n", (after_total.Sub(before_total)).Seconds())
 
 	s := 0
 	for _, succ := range successful {
 		s += succ
 	}
 
-	fmt.Printf("Successful: %d\n", s)
-	fmt.Printf("%v\n", float64(s)/(after_total.Sub(before_total)).Seconds())
+	log.Printf("Successful: %d\n", s)
+	log.Printf("%v\n", float64(s)/(after_total.Sub(before_total)).Seconds())
 
 	for _, client := range servers {
 		if client != nil {
@@ -254,14 +254,14 @@ func waitReplies(readers []*bufio.Reader, leader int, n int, done chan bool) {
 		    leader = rarray[i]
 		}*/
 		if err := reply.Unmarshal(readers[leader]); err != nil {
-			fmt.Println("Error when reading:", err)
+			log.Println("Error when reading:", err)
 			e = true
 			//continue
 			break
 		}
 		if *check {
 			if rsp[reply.Instance] {
-				fmt.Println("Duplicate reply", reply.Instance)
+				log.Println("Duplicate reply", reply.Instance)
 			}
 			rsp[reply.Instance] = true
 		}
@@ -294,7 +294,7 @@ func printer(done chan bool) {
 		mt += smooth[j]
 		i++
 		if i >= len(smooth) {
-			fmt.Println(mt / float64(len(smooth)))
+			log.Println(mt / float64(len(smooth)))
 		}
 	}
 }

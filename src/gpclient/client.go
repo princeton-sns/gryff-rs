@@ -192,7 +192,7 @@ func waitForReplies(reader *bufio.Reader, repliesChan chan int32) {
 	for true {
 		if err := reply.Unmarshal(reader); err != nil || reply.OK == 0 {
 			return
-			//fmt.Println("Error when reading from replica:", err)
+			//log.Println("Error when reading from replica:", err)
 			//continue
 		}
 		repliesChan <- reply.Instance
@@ -203,7 +203,7 @@ func printer(readings chan float64, done chan bool) {
 	n := *T * *reqsNb
 	for i := 0; i < n; i++ {
 		lat := <-readings
-		fmt.Printf("%v\n", lat)
+		log.Printf("%v\n", lat)
 	}
 	done <- true
 }

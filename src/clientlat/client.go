@@ -144,7 +144,7 @@ func simulatedClient(rlReply *masterproto.GetReplicaListReply, leader int, readi
 		args.Marshal(writers[leader])
 		writers[leader].Flush()
 		if err := reply.Unmarshal(readers[leader]); err != nil || reply.OK == 0 {
-			fmt.Println("Error when reading:", err)
+			log.Println("Error when reading:", err)
 			continue
 		}
 
@@ -171,7 +171,7 @@ func printer(readings chan float64, done chan bool) {
 	n := *T * *reqsNb
 	for i := 0; i < n; i++ {
 		lat := <-readings
-		fmt.Printf("%v\n", lat)
+		log.Printf("%v\n", lat)
 	}
 	done <- true
 }
