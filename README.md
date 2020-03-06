@@ -15,7 +15,7 @@ or conditional writes.
 
 Gryff provides its interface with low read tail latency relative to state-of-the-art linearizable replication protocols. It does so by unifying two existing techniques for replicated storage: state machine replication and shared registers. State machine replication is necessary to implement strong synchronization primitives, but it has fundamental limitations that inhibit practical systems from achieving low read tail latency. Shared register protocols, on the other hand, provide a read/write interface with low read tail latency, but are fundamentally too weak to implement strong synchronization. Gryff safely and efficiently unifies these two techniques to achieve the best of both.
 
-### How does EPaxos work?
+### How does Gryff work?
 
 Our [NSDI 2020 paper](https://www.usenix.org/conference/nsdi20/presentation/burke) describes the motivation, design, implementation, and evaluation of Gryff.
 
