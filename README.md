@@ -5,7 +5,7 @@ Gryff
 ### What is Gryff?
 
 
-Gryff is a replicated storage system that provdies the shared object programming interface. Objects of arbitrary size are
+Gryff is a replicated storage system that provides the shared object programming interface. Objects of arbitrary size are
 accessed with read, write, and read-modify-write operations. Read and write operations correspond to the simplified get/put
 interface of key-value stores and they comprise the bulk of many application workloads. Read-modify-write operations allow
 clients to atomically read and modify the value of an object, which enables strong synchronization such as compare-and-swaps
