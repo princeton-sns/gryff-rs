@@ -5,8 +5,7 @@
   ],
   "replication_protocol": [
     "gryff",
-    "epaxos",
-    "multi_paxos"
+    "gryff"
   ],
   "replication_protocol_settings": [
     {
@@ -21,46 +20,69 @@
       "server_force_write_period": -1
     },
     {
-      "server_delay_reply": true,
+      "client_regular_consistency": true,
+      "client_sequential_consistency": true,
+      "proxy_operations": true,
       "server_execute_commands": true,
-      "server_thrifty": true
-    },
-    {
       "server_delay_reply": true,
-      "server_execute_commands": true,
-      "server_thrifty": true
+      "server_thrifty": true,
+      "server_shortcircuit_timeout": -1,
+      "server_fast_overwrite_timeout": -1,
+      "server_force_write_period": -1
     }
   ],
-  "client_write_percentage": [95, 195, 295, 395, 495, 595, 695, 795, 895],
-  "client_read_percentage": [895, 795, 695, 595, 495, 395, 295, 195, 95],
+  "client_write_percentage": [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+  "client_read_percentage": [1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 0],
   "server_names":
     [
       "california",
       "virginia",
-      "ireland"
+      "ireland",
+      "oregon",
+      "japan"
     ],
   "server_ping_latencies":
     {
       "california": {
         "california": 0,
         "ireland": 151,
+        "japan": 113,
+        "oregon": 59,
         "virginia": 72
       },
       "ireland": {
         "california": 151,
         "ireland": 0,
+        "japan": 220,
+        "oregon": 145,
         "virginia": 88
+      },
+      "japan": {
+        "california": 113,
+        "ireland": 220,
+        "japan": 0,
+        "oregon": 121,
+        "virginia": 162
+      },
+      "oregon": {
+        "california": 59,
+        "ireland": 145,
+        "japan": 121,
+        "oregon": 0,
+        "virginia": 93
       },
       "virginia": {
         "california": 72,
         "ireland": 88,
+        "japan": 162,
+        "oregon": 93,
         "virginia": 0
       }
     },
   "client_conflict_percentage": 2,
   "client_nodes_per_server": 2,
   "client_processes_per_client_node": 8,
-  "client_rmw_percentage": 10,
+  "client_rmw_percentage": 0,
   "cdf_plots": {
     "font": "DejaVu Sans,12",
     "height": 600,
@@ -69,12 +91,40 @@
     "y_label": "Cumulative ratio of operations"
   },
   "plots": [{
-    "name": "writes",
+    "name": "writes-p50",
     "font": "DejaVu Sans,12",
     "height": 600,
     "width": 800,
     "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "EPaxos", "MultiPaxos"],
+    "series_titles": ["Gryff", "Gryff-RS"],
+    "x_var_is_config": true,
+    "x_var": ["client_write_percentage"],
+    "x_label": "Write %",
+    "y_label": "Latency (p50)",
+    "x_indep_vars_idx": 1,
+    "y_var": ["run_stats", "w", "p50", "p50"]
+  },
+  {
+    "name": "reads-p50",
+    "font": "DejaVu Sans,12",
+    "height": 600,
+    "width": 800,
+    "series_indep_vars_idx": 0,
+    "series_titles": ["Gryff", "Gryff-RS"],
+    "x_var_is_config": true,
+    "x_var": ["client_write_percentage"],
+    "x_label": "Write %",
+    "y_label": "Latency (p50)",
+    "x_indep_vars_idx": 1,
+    "y_var": ["run_stats", "r", "p50", "p50"]
+  },
+  {
+    "name": "writes-p99",
+    "font": "DejaVu Sans,12",
+    "height": 600,
+    "width": 800,
+    "series_indep_vars_idx": 0,
+    "series_titles": ["Gryff", "Gryff-RS"],
     "x_var_is_config": true,
     "x_var": ["client_write_percentage"],
     "x_label": "Write %",
@@ -83,12 +133,12 @@
     "y_var": ["run_stats", "w", "p99", "p50"]
   },
   {
-    "name": "reads",
+    "name": "reads-p99",
     "font": "DejaVu Sans,12",
     "height": 600,
     "width": 800,
     "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "EPaxos", "MultiPaxos"],
+    "series_titles": ["Gryff", "Gryff-RS"],
     "x_var_is_config": true,
     "x_var": ["client_write_percentage"],
     "x_label": "Write %",
@@ -99,24 +149,24 @@
   "plot_cdf_png_font": "DejaVu Sans,12",
   "plot_cdf_png_height": 600,
   "plot_cdf_png_width": 800,
-  "plot_cdf_series_title": ["Gryff", "EPaxos", "MultiPaxos"],
+  "plot_cdf_series_title": ["Gryff", "Gryff-RS"],
   "plot_cdf_x_label": "Latency (ms)",
   "plot_cdf_y_label": "Cumulative ratio of operations",
   "plot_directory_name": "plots",
   "plot_tput_lat_png_font": "DejaVu Sans,12",
   "plot_tput_lat_png_height": 600,
   "plot_tput_lat_png_width": 800,
-  "plot_tput_lat_series_title": ["Gryff", "EPaxos", "MultiPaxos"],
+  "plot_tput_lat_series_title": ["Gryff", "Gryff-RS"],
   "plot_tput_lat_x_label": "Throughput (ops/sec)",
   "plot_tput_lat_y_label": "Latency (ms)",
-  "base_local_exp_directory": "/media/matthelb/DATA/projects/epaxos/experiments/nsdi20/results/vary-reads-writes-3/",
+  "base_local_exp_directory": "/users/jhelt/gryff/experiments/sosp2021/results/vary-reads-writes-5-conflict-2/",
   "base_mounted_fs_path": "/mnt/extra",
-  "base_remote_bin_directory_nfs": "/users/matthelb/gryff",
+  "base_remote_bin_directory_nfs": "/users/jhelt/gryff",
   "base_remote_exp_directory": "/mnt/extra/experiments",
   "bin_directory_name": "bin",
   "client_bin_name": "clientnew",
   "client_debug_output": false,
-  "client_experiment_length": 180,
+  "client_experiment_length": 60,
   "client_host_format_str": "client-%d-%d.%s.%s.emulab.net",
   "client_max_processors": 2,
   "client_name_format_str": "client-%d-%d",
@@ -126,8 +176,8 @@
   "client_random_coordinator": false,
   "client_zipfian_s": 2,
   "client_zipfian_v": 1,
-  "emulab_user": "matthelb",
-  "experiment_name": "gryff",
+  "emulab_user": "root",
+  "experiment_name": "jhelt-QV91270",
   "master_bin_name": "master",
   "master_port": 7077,
   "master_server_name": "california",
@@ -147,7 +197,7 @@
   "server_port": 7087,
   "server_rpc_port": 8087,
   "src_commit_hash": "master",
-  "src_directory": "/media/matthelb/DATA/projects/epaxos",
+  "src_directory": "/users/jhelt/gryff",
   "codebase_name": "gryff",
   "remote_bin_directory_nfs_enabled": false,
   "server_emulate_wan": true,
