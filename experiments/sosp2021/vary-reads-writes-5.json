@@ -4,6 +4,7 @@
     ["client_write_percentage", "client_read_percentage"]
   ],
   "replication_protocol": [
+    "gryff",
     "gryff"
   ],
   "replication_protocol_settings": [
@@ -17,10 +18,21 @@
       "server_shortcircuit_timeout": -1,
       "server_fast_overwrite_timeout": -1,
       "server_force_write_period": -1
+    },
+    {
+      "client_regular_consistency": true,
+      "client_sequential_consistency": true,
+      "proxy_operations": true,
+      "server_execute_commands": true,
+      "server_delay_reply": true,
+      "server_thrifty": true,
+      "server_shortcircuit_timeout": -1,
+      "server_fast_overwrite_timeout": -1,
+      "server_force_write_period": -1
     }
   ],
-  "client_write_percentage": [95, 195, 295, 395, 495, 595, 695, 795, 895],
-  "client_read_percentage": [895, 795, 695, 595, 495, 395, 295, 195, 95],
+  "client_write_percentage": [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+  "client_read_percentage": [1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 0],
   "server_names":
     [
       "california",
@@ -67,10 +79,10 @@
         "virginia": 0
       }
     },
-  "client_conflict_percentage": 2,
+  "client_conflict_percentage": 10,
   "client_nodes_per_server": 2,
   "client_processes_per_client_node": 8,
-  "client_rmw_percentage": 10,
+  "client_rmw_percentage": 0,
   "cdf_plots": {
     "font": "DejaVu Sans,12",
     "height": 600,
@@ -84,7 +96,7 @@
     "height": 600,
     "width": 800,
     "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "EPaxos", "MultiPaxos"],
+    "series_titles": ["Gryff", "Gryff-RS"],
     "x_var_is_config": true,
     "x_var": ["client_write_percentage"],
     "x_label": "Write %",
@@ -98,7 +110,7 @@
     "height": 600,
     "width": 800,
     "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "EPaxos", "MultiPaxos"],
+    "series_titles": ["Gryff", "Gryff-RS"],
     "x_var_is_config": true,
     "x_var": ["client_write_percentage"],
     "x_label": "Write %",
@@ -109,17 +121,17 @@
   "plot_cdf_png_font": "DejaVu Sans,12",
   "plot_cdf_png_height": 600,
   "plot_cdf_png_width": 800,
-  "plot_cdf_series_title": ["Gryff"],
+  "plot_cdf_series_title": ["Gryff", "Gryff-RS"],
   "plot_cdf_x_label": "Latency (ms)",
   "plot_cdf_y_label": "Cumulative ratio of operations",
   "plot_directory_name": "plots",
   "plot_tput_lat_png_font": "DejaVu Sans,12",
   "plot_tput_lat_png_height": 600,
   "plot_tput_lat_png_width": 800,
-  "plot_tput_lat_series_title": ["Gryff"],
+  "plot_tput_lat_series_title": ["Gryff", "Gryff-RS"],
   "plot_tput_lat_x_label": "Throughput (ops/sec)",
   "plot_tput_lat_y_label": "Latency (ms)",
-  "base_local_exp_directory": "/users/jhelt/experiments/sosp2021/results/vary-reads-writes-5/",
+  "base_local_exp_directory": "/users/jhelt/gryff/experiments/sosp2021/results/vary-reads-writes-5/",
   "base_mounted_fs_path": "/mnt/extra",
   "base_remote_bin_directory_nfs": "/users/jhelt/gryff",
   "base_remote_exp_directory": "/mnt/extra/experiments",
@@ -136,7 +148,7 @@
   "client_random_coordinator": false,
   "client_zipfian_s": 2,
   "client_zipfian_v": 1,
-  "emulab_user": "jhelt",
+  "emulab_user": "root",
   "experiment_name": "jhelt-QV91270",
   "master_bin_name": "master",
   "master_port": 7077,
