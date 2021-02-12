@@ -120,11 +120,12 @@ func (r *GryffParticipant) HandleWrite1(key state.Key, val state.Value,
     n int32, dep *gryffproto.Dep, requestId int32, clientId int32,
     maxAppliedTag *gryffproto.Tag, forceWrite int32,
     coordId int32) *gryffproto.Write1Reply {
+  /* TODO: commenting shortcircuit write logic because of bug when proxy is disabled
   r.iparti.Printf("Received Write1[%d,%d] reply from replica %d.\n",
       requestId, clientId, coordId)
   if r.OngoingWrites[clientId] != nil && r.OngoingWrites[clientId].RequestId > requestId {
     return nil
-  }
+  }*/
   if dep.Key >= 0 { // dep.Key < 0 ==> no dep
     r.HandleOverwrite(dep.Key, dep.Vt.V, &dep.Vt.T)
   }
@@ -140,7 +141,8 @@ func (r *GryffParticipant) HandleWrite1(key state.Key, val state.Value,
   //     noTimeout = false
   //   }
   // }
-  r.iparti.Printf("OngoingWrites %v Write1[%d,%d].\n", r.OngoingWrites, requestId, clientId)
+  /* TODO: commenting shortcircuit write logic because of bug when proxy is disabled
+ r.iparti.Printf("OngoingWrites %v Write1[%d,%d].\n", r.OngoingWrites, requestId, clientId)
   // r.iparti.Printf("Length of concurrentWrites %d Write1[%d,%d].\n", len(concurrentWrites), requestId, clientId)
   // add new write to ongoingWrites
   if r.OngoingWrites[clientId] != nil && r.OngoingWrites[clientId].RequestId < requestId {
@@ -149,27 +151,27 @@ func (r *GryffParticipant) HandleWrite1(key state.Key, val state.Value,
   } else if r.OngoingWrites[clientId] == nil {
     wop := newWriteOp(requestId, clientId, n, forceWrite, key, val, *dep, coordId, *maxAppliedTag)
     r.OngoingWrites[clientId] = wop
-  }
+  }*/
   // if no other writes for this key currently ongoing, then send Write1Reply
   // else wait until timeout
   meta := r.GetStoreMetadata(key)
   valTag := &gryffproto.ValTag{ V: -1, T: *meta.Tag}
-  if forceWrite > 0  { // || noTimeout len(concurrentWrites) == 0 {
-    r.iparti.GetStats().Max("tag_map_size", len(r.storeTag))
+  //if forceWrite > 0  { // || noTimeout len(concurrentWrites) == 0 {
+    //r.iparti.GetStats().Max("tag_map_size", len(r.storeTag))
     w1reply := &gryffproto.Write1Reply{requestId, clientId, r.id, *valTag}
     // mark Write1Reply for this write as sent
-    r.OngoingWrites[clientId].SentWrite1Reply = true
+    //r.OngoingWrites[clientId].SentWrite1Reply = true
     r.iparti.Printf("Replying to Write1[%d,%d](%d).\n",
         requestId, clientId, key)
     return w1reply
-  } else {
+  /*} else {
     r.OngoingWrites[clientId].SentWrite1Reply = false
     w1r := &gryffproto.Write1Reply{requestId, clientId, r.id, *valTag}
     r.iparti.Printf("Begin timeout for write1[%d,%d] with SentWrite1Reply %v.\n",
       requestId, clientId, r.OngoingWrites[clientId].SentWrite1Reply)
     go r.iparti.SendWrite1Timeout(w1r)
     return nil
-  }
+  }*/
 }
 
 func (r *GryffParticipant) HandleWrite2(key state.Key, vt gryffproto.ValTag,
@@ -184,6 +186,7 @@ func (r *GryffParticipant) HandleWrite2(key state.Key, vt gryffproto.ValTag,
   }
   r.HandleOverwrite(key, vt.V, &vt.T)
 
+  /* TODO: commenting shortcircuit write logic because of bug when proxy is disabled
   delete(r.OngoingWrites, clientId)
   ongoingWrite := false
   concurrentWrites := make([]*OngoingWriteOp, 0)
@@ -225,7 +228,7 @@ func (r *GryffParticipant) HandleWrite2(key state.Key, vt gryffproto.ValTag,
       r.iparti.Printf("Stopped timeout for Write1[%d,%d].\n", write.RequestId, write.ClientId)
       r.iparti.HandleWrite1Overwrite(write.ReplicaId, w1reply)
     }
-  }
+  }*/
 
   w2reply := &gryffproto.Write2Reply{requestId, clientId, r.id,
       *r.GetStoreMetadata(key).Tag, int32(applied)}

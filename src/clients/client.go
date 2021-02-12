@@ -208,6 +208,7 @@ func (c *AbstractClient) DetermineLeader() {
 func (c *AbstractClient) DetermineReplicaPings() {
   log.Printf("Determining replica pings...\n")
   for i := 0; i < c.numReplicas; i++ {
+    c.replicasByPingRank[i] = int32(i)
   }
 
   done := make(chan bool, c.numReplicas)
@@ -223,12 +224,15 @@ func (c *AbstractClient) DetermineReplicaPings() {
 
   // mini selection sort
   for i := 0; i < c.numReplicas; i++ {
-    c.replicasByPingRank[i] = int32(i)
+    min := i
     for j := i + 1; j < c.numReplicas; j++ {
-      if c.replicaPing[j] < c.replicaPing[c.replicasByPingRank[i]] {
-        c.replicasByPingRank[i] = int32(j)
+      if c.replicaPing[c.replicasByPingRank[j]] < c.replicaPing[c.replicasByPingRank[min]] {
+        min = j
       }
     }
+    tmp := c.replicasByPingRank[i]
+    c.replicasByPingRank[i] = c.replicasByPingRank[min]
+    c.replicasByPingRank[min] = tmp
   }
   log.Printf("Successfully pinged all replicas!\n")
 }

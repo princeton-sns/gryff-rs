@@ -344,9 +344,12 @@ func (c *GryffCoordinator) StartRead(requestId int32, clientId int32,
       replicas = append(replicas, i)
     }
   }
+  c.icoord.Printf("Read1 replica candidates %v.\n", replicas)
+
   if c.thrifty {
     // TODO: why was this commented?
     replicas = c.getThriftyReplicas(replicas, r.numRead1Replies)
+    c.icoord.Printf("Read1 thrifty replicas %v.\n", replicas)
   } 
 
   c.icoord.SendRead1(r, replicas)
@@ -681,11 +684,13 @@ func (c *GryffCoordinator) getThriftyReplicas(replicas []int32,
     n int) []int32 {
   thriftyReplicas := make([]int32, 0)
   rbr := c.icoord.GetReplicasByRank()
+  c.icoord.Printf("Replicas by rank %v.\n", rbr)
   // selection sort
   for i := 0; i < len(rbr); i++ {
     for j := 0; j < len(replicas); j++ {
       if int32(rbr[i]) == replicas[j] {
         thriftyReplicas = append(thriftyReplicas, replicas[j])
+        c.icoord.Printf("rbr[i] %d replicas[j] %d.\n", rbr[i], replicas[j])
         break
       }
     }

@@ -304,6 +304,22 @@ func (e *EPaxosRMWHandler) Loop(slowClockChan chan bool) {
         e.R.myPreferredPeerOrder[i + 1] = e.R.PreferredPeerOrder[i]
       }
       break
+    case read1S := <-e.R.read1Chan:
+      read1 := read1S.Obj.(*gryffproto.Read1)
+      e.R.handleRead1(read1, read1S.Reply)
+      break
+    case read2S := <-e.R.read2Chan:
+      read2 := read2S.Obj.(*gryffproto.Read2)
+      e.R.handleRead2(read2, read2S.Reply)
+      break
+    case write1S := <-e.R.write1Chan:
+      write1 := write1S.Obj.(*gryffproto.Write1)
+      e.R.handleWrite1(write1, write1S.Reply)
+      break
+    case write2S := <-e.R.write2Chan:
+      write2 := write2S.Obj.(*gryffproto.Write2)
+      e.R.handleWrite2(write2, write2S.Reply)
+      break
     case readS := <-e.R.readChan:
       read := readS.Obj.(*gryffproto.Read)
       // got Read message
