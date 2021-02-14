@@ -1,7 +1,7 @@
 {
   "experiment_independent_vars": [
     ["replication_protocol", "replication_protocol_settings", "plot_cdf_series_title", "plot_tput_lat_series_title"],
-    ["client_write_percentage", "client_read_percentage"]
+    ["client_processes_per_client_node", "client_nodes_per_server"]
   ],
   "replication_protocol": [
     "gryff",
@@ -31,8 +31,6 @@
       "server_force_write_period": -1
     }
   ],
-  "client_write_percentage": [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
-  "client_read_percentage": [1000, 900, 800, 700, 600, 500, 400, 300, 200, 100, 0],
   "server_names":
     [
       "california",
@@ -79,10 +77,12 @@
         "virginia": 0
       }
     },
-  "client_conflict_percentage": 25,
-  "client_nodes_per_server": 2,
-  "client_processes_per_client_node": 8,
+  "client_conflict_percentage": 10,
+  "client_write_percentage": 50,
+  "client_read_percentage": 950,
   "client_rmw_percentage": 0,
+  "client_nodes_per_server": [1, 1, 1, 2, 2, 2, 2, 2],
+  "client_processes_per_client_node": [1, 2, 3, 2, 3, 4, 6, 7],
   "cdf_plots": {
     "font": "DejaVu Sans,12",
     "height": 600,
@@ -90,62 +90,36 @@
     "x_label": "Latency (ms)",
     "y_label": "Cumulative ratio of operations"
   },
-  "plots": [{
-    "name": "writes-p50",
-    "font": "DejaVu Sans,12",
-    "height": 600,
-    "width": 800,
-    "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "Gryff-RS"],
-    "x_var_is_config": true,
-    "x_var": ["client_write_percentage"],
-    "x_label": "Write %",
-    "y_label": "Latency (p50)",
-    "x_indep_vars_idx": 1,
-    "y_var": ["run_stats", "w", "p50", "p50"]
-  },
-  {
-    "name": "reads-p50",
-    "font": "DejaVu Sans,12",
-    "height": 600,
-    "width": 800,
-    "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "Gryff-RS"],
-    "x_var_is_config": true,
-    "x_var": ["client_write_percentage"],
-    "x_label": "Write %",
-    "y_label": "Latency (p50)",
-    "x_indep_vars_idx": 1,
-    "y_var": ["run_stats", "r", "p50", "p50"]
-  },
-  {
-    "name": "writes-p99",
-    "font": "DejaVu Sans,12",
-    "height": 600,
-    "width": 800,
-    "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "Gryff-RS"],
-    "x_var_is_config": true,
-    "x_var": ["client_write_percentage"],
-    "x_label": "Write %",
-    "y_label": "Latency (p99)",
-    "x_indep_vars_idx": 1,
-    "y_var": ["run_stats", "w", "p99", "p50"]
-  },
-  {
-    "name": "reads-p99",
-    "font": "DejaVu Sans,12",
-    "height": 600,
-    "width": 800,
-    "series_indep_vars_idx": 0,
-    "series_titles": ["Gryff", "Gryff-RS"],
-    "x_var_is_config": true,
-    "x_var": ["client_write_percentage"],
-    "x_label": "Write %",
-    "y_label": "Latency (p99)",
-    "x_indep_vars_idx": 1,
-    "y_var": ["run_stats", "r", "p99", "p50"]
-  }],
+  "plots": [
+    {
+      "name": "tput-lat-p50",
+      "font": "DejaVu Sans,12",
+      "height": 600,
+      "width": 800,
+      "series_indep_vars_idx": 0,
+      "series_titles": ["Gryff", "Gryff-RS"],
+      "x_var_is_config": false,
+      "x_var": ["run_stats", "combined", "tput", "p50"],
+      "x_label": "Throughput (ops/s)",
+      "y_label": "p50 Latency (ms)",
+      "x_indep_vars_idx": 1,
+      "y_var": ["aggregate", "combined", "p50"]
+    },
+    {
+      "name": "tput-lat-p99",
+      "font": "DejaVu Sans,12",
+      "height": 600,
+      "width": 800,
+      "series_indep_vars_idx": 0,
+      "series_titles": ["Gryff", "Gryff-RS"],
+      "x_var_is_config": false,
+      "x_var": ["run_stats", "combined", "tput", "p50"],
+      "x_label": "Throughput (ops/s)",
+      "y_label": "p99 Latency (ms)",
+      "x_indep_vars_idx": 1,
+      "y_var": ["aggregate", "combined", "p99"]
+    }
+  ],
   "plot_cdf_png_font": "DejaVu Sans,12",
   "plot_cdf_png_height": 600,
   "plot_cdf_png_width": 800,
@@ -159,7 +133,7 @@
   "plot_tput_lat_series_title": ["Gryff", "Gryff-RS"],
   "plot_tput_lat_x_label": "Throughput (ops/sec)",
   "plot_tput_lat_y_label": "Latency (ms)",
-  "base_local_exp_directory": "/users/jhelt/gryff/experiments/sosp2021/results/vary-reads-writes-5-conflict-25/",
+  "base_local_exp_directory": "/users/jhelt/gryff/experiments/sosp2021/results/tput-5-ycsbb-conflict-10",
   "base_mounted_fs_path": "/mnt/extra",
   "base_remote_bin_directory_nfs": "/users/jhelt/gryff",
   "base_remote_exp_directory": "/mnt/extra/experiments",
@@ -200,7 +174,7 @@
   "src_directory": "/users/jhelt/gryff",
   "codebase_name": "gryff",
   "remote_bin_directory_nfs_enabled": false,
-  "server_emulate_wan": true,
+  "server_emulate_wan": false,
   "run_locally": false,
   "default_remote_shell": "tcsh",
   "client_disable_gc": true,

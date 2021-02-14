@@ -166,7 +166,7 @@
   "bin_directory_name": "bin",
   "client_bin_name": "clientnew",
   "client_debug_output": false,
-  "client_experiment_length": 60,
+  "client_experiment_length": 120,
   "client_host_format_str": "client-%d-%d.%s.%s.emulab.net",
   "client_max_processors": 2,
   "client_name_format_str": "client-%d-%d",
