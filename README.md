@@ -1,41 +1,24 @@
-Gryff
-======
+# Gryff-RSC
 
+## What is Gryff-RSC?
 
-### What is Gryff?
+Gryff-RSC is a variant of the Gryff key-value store presented at NSDI 2020. Gryff combines a shared register and consensus protocol
+to offer linearizable reads, writes, and read-modify-writes operations.
+Gryff-RSC relaxes Gryff's consistency from linearizability to regular sequential consistency, and as a result,
+Gryff-RSC offers lower tail read latency. This code was used for the SOSP 2021 paper,
+["Regular Sequential Serializability and Regular Sequential
+Consistency."](https://dl.acm.org/doi/10.1145/3477132.3483566) It is based off
+of the code originally used in the evaluation of
+[Gryff](https://www.usenix.org/conference/nsdi20/presentation/burke).
 
+This repository includes an implementation of Gryff's protocol, an
+implementation of our Gryff-RSC variant, and scripts to run the experiments
+presented in our paper.
 
-Gryff is a replicated storage system that provides the shared object programming interface. Objects of arbitrary size are
-accessed with read, write, and read-modify-write operations. Read and write operations correspond to the simplified get/put
-interface of key-value stores and they comprise the bulk of many application workloads. Read-modify-write operations allow
-clients to atomically read and modify the value of an object, which enables strong synchronization such as compare-and-swaps
-or conditional writes.
+## Compiling & Running
+Directions coming soon!
 
-### What makes Gryff novel?
-
-Gryff provides its interface with low read tail latency relative to state-of-the-art linearizable replication protocols. It does so by unifying two existing techniques for replicated storage: state machine replication and shared registers. State machine replication is necessary to implement strong synchronization primitives, but it has fundamental limitations that inhibit practical systems from achieving low read tail latency. Shared register protocols, on the other hand, provide a read/write interface with low read tail latency, but are fundamentally too weak to implement strong synchronization. Gryff safely and efficiently unifies these two techniques to achieve the best of both.
-
-### How does Gryff work?
-
-Our [NSDI 2020 paper](https://www.usenix.org/conference/nsdi20/presentation/burke) describes the motivation, design, implementation, and evaluation of Gryff.
-
-### What is in this repository?
-
-This repository contains the Go implementations of:
-
-* Gryff
-* ABD
-* EPaxos
-* (classic) MultiPaxos
-* Mencius
-* Generalized Paxos
-
-The implementations of EPaxos, MultiPaxos, Mencius, and Generalized Paxos were created by Iulian Moraru, David G. Andersen, and Michael Kaminsky as part of the [EPaxos project](https://github.com/efficient/epaxos).
-
-This repository also contains the experimental scripts and configuration used in our NSDI 2020 paper. The experiments may be run on CloudLab using these scripts. A more detailed explanation of how to run these experiments is coming soon!
-
-AUTHORS:
+## Authors
+Jeffrey Helt, Amit Levy, Wyatt Lloyd -- Princeton University
 
 Matthew Burke -- Cornell University
-
-Audrey Cheng, Wyatt Lloyd -- Princeton University
