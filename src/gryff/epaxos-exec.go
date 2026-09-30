@@ -148,6 +148,9 @@ func (e *Exec) strongconnect(v *Instance, index *int) bool {
       if w.Cmds[0].OldValue == vt.V {
         vt.V = w.Cmds[0].V
       }
+      // advance carstamp
+      vt.T = gryffproto.Tag{vt.T.Ts, vt.T.Cid, vt.T.Rmwc + 1}
+      e.r.PrevValTag[w.Cmds[0].K] = vt
       // avoid concurrency bugs by performing overwrite in "main" goroutine
       e.r.executeOverwriteChan <- &ExecuteOverwrite{w.Cmds[0].K, vt.V, &vt.T, w.Leader, w.Slot}
       // never do the below:
